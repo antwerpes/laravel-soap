@@ -1,8 +1,8 @@
 # Passes
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/antwerpes/laravel-soap.svg?style=flat-square)](https://packagist.org/packages/antwerpes/laravel-soap)
-[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/antwerpes/laravel-soap/run-tests.yml?branch=master)](https://github.com/antwerpes/laravel-soap/actions/workflows/run-tests.yml)
-[![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/antwerpes/laravel-soap/lint.yml?branch=master)](https://github.com/antwerpes/laravel-soap/actions/workflows/lint.yml)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/antwerpes/laravel-soap/run-tests.yml?branch=master)](https://github.com/antwerpes/laravel-soap/actions/workflows/run-tests.yml)
+[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/antwerpes/laravel-soap/lint.yml?branch=master)](https://github.com/antwerpes/laravel-soap/actions/workflows/lint.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/antwerpes/laravel-soap.svg?style=flat-square)](https://packagist.org/packages/antwerpes/laravel-soap)
 
 Fork of [codedredd/laravel-soap](https://github.com/CodeDredd/laravel-soap) compatible with Laravel 12 and PHP 8.4
