@@ -1,19 +1,19 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace CodeDredd\Soap\Tests\Fixtures;
+namespace Antwerpes\Soap\Tests\Fixtures;
 
-use CodeDredd\Soap\SoapClient;
+use Antwerpes\Soap\SoapClient;
 
 class CustomSoapClient extends SoapClient
 {
-    public function buildClient(string $setup = '')
+    public function buildClient(string $setup = ''): static
     {
         $this->baseWsdl(__DIR__.'/Wsdl/weather.wsdl');
         $this->withGuzzleClientOptions([
             'handler' => $this->buildHandlerStack(),
         ]);
         $this->refreshEngine();
-        $this->isClientBuilded = true;
+        $this->isClientBuilt = true;
 
         return $this;
     }

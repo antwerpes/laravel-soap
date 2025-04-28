@@ -17,13 +17,13 @@ Some code is based/copied on/from [Laravel Http wrapper](https://github.com/illu
 !!! abstract "Package"
     Execute the following command to get the latest version of the package:
     ````bash
-    composer require codedredd/laravel-soap
+    composer require Antwerpes/laravel-soap
     ````
 
 !!! info "Configuration"
     Publish Configuration
     ```bash
-    php artisan vendor:publish --provider "CodeDredd\Soap\SoapServiceProvider"
+    php artisan vendor:publish --provider "Antwerpes\Soap\SoapServiceProvider"
     ```
 
 !!! warning "Code generation feature"

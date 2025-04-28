@@ -1,17 +1,14 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace CodeDredd\Soap\Exceptions;
+namespace Antwerpes\Soap\Exceptions;
 
 use RuntimeException;
+use Throwable;
 
 class NotFoundConfigurationException extends RuntimeException
 {
-    /**
-     * @param  \Throwable  $throwable
-     * @return NotFoundConfigurationException
-     */
-    public static function fromThrowable(\Throwable $throwable): self
+    public static function fromThrowable(Throwable $throwable): self
     {
-        return new self($throwable->getMessage(), (int) $throwable->getCode(), $throwable);
+        return new self($throwable->getMessage(), $throwable->getCode(), $throwable);
     }
 }

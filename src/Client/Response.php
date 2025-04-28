@@ -1,9 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace CodeDredd\Soap\Client;
+namespace Antwerpes\Soap\Client;
 
+use Antwerpes\Soap\Exceptions\RequestException;
 use ArrayAccess;
-use CodeDredd\Soap\Exceptions\RequestException;
 use GuzzleHttp\Psr7\Response as Psr7Response;
 use GuzzleHttp\TransferStats;
 use Illuminate\Support\Collection;
@@ -11,41 +11,40 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Macroable;
 use LogicException;
 use Phpro\SoapClient\Type\ResultInterface;
-use Psr\Http\Message\ResponseInterface;
-use VeeWee\Xml\Dom\Document;
 
 use function Psl\Type\string;
 
-/**
- * Class Response.
- */
-class Response implements ResultInterface, ArrayAccess
+use Psr\Http\Message\ResponseInterface;
+use SoapFault;
+use VeeWee\Xml\Dom\Document;
+
+class Response implements ArrayAccess, ResultInterface
 {
     use Macroable {
         __call as macroCall;
     }
     protected ?TransferStats $transferStats = null;
-
     protected array $cookies = [];
 
-    /**
-     * The underlying PSR response.
-     */
-    protected ResponseInterface $response;
-
-    /**
-     * The decoded JSON response.
-     *
-     * @var array
-     */
-    protected $decoded;
+    /** The decoded JSON response. */
+    protected ?array $decoded = null;
 
     /**
      * Create a new response instance.
      */
-    public function __construct(ResponseInterface $response)
+    public function __construct(
+        /** The underlying PSR response. */
+        protected ResponseInterface $response,
+    ) {}
+
+    public static function fromSoapResponse(mixed $result, int $status = 200): self
     {
-        $this->response = $response;
+        return new self(new Psr7Response($status, [], json_encode($result)));
+    }
+
+    public static function fromSoapFault(SoapFault $soapFault): self
+    {
+        return new self(new Psr7Response(400, [], $soapFault->getMessage()));
     }
 
     public function setCookies(array $cookies): void
@@ -58,16 +57,6 @@ class Response implements ResultInterface, ArrayAccess
         $this->transferStats = $transferStats;
     }
 
-    public static function fromSoapResponse(mixed $result, int $status = 200): Response
-    {
-        return new self(new Psr7Response($status, [], json_encode($result)));
-    }
-
-    public static function fromSoapFault(\SoapFault $soapFault): Response
-    {
-        return new self(new Psr7Response(400, [], $soapFault->getMessage()));
-    }
-
     /**
      * Get the underlying PSR response for the response.
      */
@@ -78,8 +67,6 @@ class Response implements ResultInterface, ArrayAccess
 
     /**
      * Get the JSON decoded body of the response as an object.
-     *
-     * @return object
      */
     public function object(): object
     {
@@ -88,32 +75,26 @@ class Response implements ResultInterface, ArrayAccess
 
     /**
      * Get the JSON decoded body of the response as a collection.
-     *
-     * @param  string|null  $key
-     * @return \Illuminate\Support\Collection
      */
-    public function collect(string $key = null): Collection
+    public function collect(?string $key = null): Collection
     {
         return Collection::make($this->json($key));
     }
 
     /**
      * Get the body of the response.
-     *
-     * @param  bool  $transformXml
-     * @param  bool  $sanitizeXmlFaultMessage
-     * @return string
      */
     public function body(bool $transformXml = true, bool $sanitizeXmlFaultMessage = true): string
     {
         $body = (string) $this->response->getBody();
+
         if ($transformXml && Str::contains($body, '<?xml')) {
             $message = Document::fromXmlString($body)
-                    ->xpath()
-                    ->evaluate('string(.//faultstring)', string())
+                ->xpath()
+                ->evaluate('string(.//faultstring)', string())
                 ?? 'No Fault Message found';
 
-            return trim($sanitizeXmlFaultMessage ? Str::after($message, 'Exception:') : $message);
+            return mb_trim($sanitizeXmlFaultMessage ? Str::after($message, 'Exception:') : $message);
         }
 
         return $body;
@@ -121,8 +102,6 @@ class Response implements ResultInterface, ArrayAccess
 
     /**
      * Determine if the request was successful.
-     *
-     * @return bool
      */
     public function successful(): bool
     {
@@ -131,12 +110,10 @@ class Response implements ResultInterface, ArrayAccess
 
     /**
      * Get the status code of the response.
-     *
-     * @return int
      */
     public function status(): int
     {
-        return (int) $this->response->getStatusCode();
+        return $this->response->getStatusCode();
     }
 
     /**
@@ -166,16 +143,14 @@ class Response implements ResultInterface, ArrayAccess
     /**
      * Throw an exception if a server or client error occurred.
      *
-     * @return $this
-     *
-     * @throws \CodeDredd\Soap\Exceptions\RequestException
+     * @throws RequestException
      */
-    public function throw()
+    public function throw(): static
     {
         $callback = func_get_args()[0] ?? null;
 
         if ($this->failed()) {
-            throw tap(new RequestException($this), function ($exception) use ($callback) {
+            throw tap(new RequestException($this), function ($exception) use ($callback): void {
                 if ($callback && is_callable($callback)) {
                     $callback($this, $exception);
                 }
@@ -188,12 +163,9 @@ class Response implements ResultInterface, ArrayAccess
     /**
      * Throw an exception if a server or client error occurred and the given condition evaluates to true.
      *
-     * @param  bool  $condition
-     * @return $this
-     *
-     * @throws \CodeDredd\Soap\Exceptions\RequestException
+     * @throws RequestException
      */
-    public function throwIf(bool $condition): Response|static
+    public function throwIf(bool $condition): static
     {
         return $condition ? $this->throw() : $this;
     }
@@ -216,11 +188,8 @@ class Response implements ResultInterface, ArrayAccess
 
     /**
      * Execute the given callback if there was a server or client error.
-     *
-     * @param  \Closure|callable  $callback
-     * @return \CodeDredd\Soap\Client\Response
      */
-    public function onError(callable $callback)
+    public function onError(callable $callback): static
     {
         if ($this->failed()) {
             $callback($this);
@@ -231,16 +200,17 @@ class Response implements ResultInterface, ArrayAccess
 
     /**
      * Get the handler stats of the response.
-     *
-     * @return array
      */
-    public function handlerStats()
+    public function handlerStats(): array
     {
         return $this->transferStats?->getHandlerStats() ?? [];
     }
 
     /**
      * Get the JSON decoded body of the response as an array.
+     *
+     * @param null|mixed $key
+     * @param null|mixed $default
      */
     public function json($key = null, $default = null): ?array
     {
@@ -248,7 +218,7 @@ class Response implements ResultInterface, ArrayAccess
             $this->decoded = json_decode($this->body(), true);
         }
 
-        if (is_null($key)) {
+        if ($key === null) {
             return $this->decoded;
         }
 
@@ -274,8 +244,7 @@ class Response implements ResultInterface, ArrayAccess
     /**
      * Determine if the given offset exists.
      *
-     * @param  string  $offset
-     * @return bool
+     * @param string $offset
      */
     public function offsetExists($offset): bool
     {
@@ -285,8 +254,7 @@ class Response implements ResultInterface, ArrayAccess
     /**
      * Get the value for a given offset.
      *
-     * @param  string  $offset
-     * @return mixed
+     * @param string $offset
      */
     public function offsetGet($offset): mixed
     {
@@ -296,13 +264,11 @@ class Response implements ResultInterface, ArrayAccess
     /**
      * Set the value at the given offset.
      *
-     * @param  string  $offset
-     * @param  mixed  $value
-     * @return void
+     * @param string $offset
      *
-     * @throws \LogicException
+     * @throws LogicException
      */
-    public function offsetSet($offset, $value): void
+    public function offsetSet($offset, mixed $value): void
     {
         throw new LogicException('Response data may not be mutated using array access.');
     }
@@ -310,10 +276,9 @@ class Response implements ResultInterface, ArrayAccess
     /**
      * Unset the value at the given offset.
      *
-     * @param  string  $offset
-     * @return void
+     * @param string $offset
      *
-     * @throws \LogicException
+     * @throws LogicException
      */
     public function offsetUnset($offset): void
     {
@@ -333,8 +298,9 @@ class Response implements ResultInterface, ArrayAccess
     /**
      * Dynamically proxy other methods to the underlying response.
      *
-     * @param  string  $method
-     * @param  array  $parameters
+     * @param string $method
+     * @param array $parameters
+     *
      * @return mixed
      */
     public function __call($method, $parameters)

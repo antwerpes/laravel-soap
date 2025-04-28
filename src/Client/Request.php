@@ -1,48 +1,40 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace CodeDredd\Soap\Client;
+namespace Antwerpes\Soap\Client;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Macroable;
 use LogicException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Soap\Psr18Transport\HttpBinding\SoapActionDetector;
 use Soap\Xml\Locator\SoapBodyLocator;
-use VeeWee\Xml\Dom\Document;
-use VeeWee\Xml\Dom\Traverser\Visitor\RemoveNamespaces;
-use VeeWee\Xml\Encoding\Exception\EncodingException;
 
 use function VeeWee\Xml\Dom\Configurator\traverse;
+
+use VeeWee\Xml\Dom\Document;
+use VeeWee\Xml\Dom\Traverser\Visitor\RemoveNamespaces;
+
 use function VeeWee\Xml\Encoding\element_decode;
 
-/**
- * Class Request.
- */
+use VeeWee\Xml\Encoding\Exception\EncodingException;
+
 class Request
 {
     use Macroable;
 
-    /**
-     * The underlying PSR request.
-     */
-    protected RequestInterface $request;
-
-    /**
-     * The decoded payload for the request.
-     */
+    /** The decoded payload for the request. */
     protected array $data;
 
     /**
      * Create a new request instance.
-     *
-     * @param  RequestInterface  $request
-     * @return void
      */
-    public function __construct($request)
-    {
-        $this->request = $request;
-    }
+    public function __construct(
+        /** The underlying PSR request. */
+        protected RequestInterface $request,
+    ) {}
 
     /**
      * Get the soap action for soap 1.1 and 1.2.
@@ -67,14 +59,10 @@ class Request
 
     /**
      * Determine if the request has a given header.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return bool
      */
-    public function hasHeader($key, $value = null)
+    public function hasHeader(string $key, mixed $value = null): bool
     {
-        if (is_null($value)) {
+        if ($value === null) {
             return ! empty($this->request->getHeaders()[$key]);
         }
 
@@ -91,11 +79,8 @@ class Request
 
     /**
      * Determine if the request has the given headers.
-     *
-     * @param  array|string  $headers
-     * @return bool
      */
-    public function hasHeaders($headers)
+    public function hasHeaders(array|string $headers): bool
     {
         if (is_string($headers)) {
             $headers = [$headers => null];
@@ -112,31 +97,24 @@ class Request
 
     /**
      * Get the values for the header with the given name.
-     *
-     * @param  string  $key
-     * @return array
      */
-    public function header($key)
+    public function header(string $key): array
     {
         return Arr::get($this->headers(), $key, []);
     }
 
     /**
      * Get the request headers.
-     *
-     * @return array
      */
-    public function headers()
+    public function headers(): array
     {
         return $this->request->getHeaders();
     }
 
     /**
      * Get the body of the request.
-     *
-     * @return string
      */
-    public function body()
+    public function body(): string
     {
         return (string) $this->request->getBody();
     }
@@ -153,27 +131,28 @@ class Request
      * Return request arguments.
      *
      * @throws EncodingException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function arguments(): array
     {
         $doc = Document::fromXmlString($this->body());
         $wrappedArguments = config()->get('soap.call.wrap_arguments_in_array', true);
-        $method = $doc->locate(new SoapBodyLocator());
+        $method = $doc->locate(new SoapBodyLocator);
 
         if ($wrappedArguments) {
             $method = $method?->firstElementChild;
         }
 
-        return Arr::wrap(Arr::get(element_decode($method, traverse(new RemoveNamespaces())), $wrappedArguments ? 'node' : 'Body', []));
+        return Arr::wrap(
+            Arr::get(element_decode($method, traverse(new RemoveNamespaces)), $wrappedArguments ? 'node' : 'Body', []),
+        );
     }
 
     /**
      * Set the decoded data on the request.
-     *
-     * @param  array  $data
-     * @return $this
      */
-    public function withData(array $data)
+    public function withData(array $data): static
     {
         $this->data = $data;
 
@@ -182,10 +161,8 @@ class Request
 
     /**
      * Get the underlying PSR compliant request instance.
-     *
-     * @return \Psr\Http\Message\RequestInterface
      */
-    public function toPsrRequest()
+    public function toPsrRequest(): RequestInterface
     {
         return $this->request;
     }
@@ -193,10 +170,9 @@ class Request
     /**
      * Determine if the given offset exists.
      *
-     * @param  string  $offset
-     * @return bool
-     *
+     * @throws ContainerExceptionInterface
      * @throws EncodingException
+     * @throws NotFoundExceptionInterface
      */
     public function offsetExists(string $offset): bool
     {
@@ -206,12 +182,11 @@ class Request
     /**
      * Get the value for a given offset.
      *
-     * @param  string  $offset
-     * @return mixed
-     *
+     * @throws ContainerExceptionInterface
      * @throws EncodingException
+     * @throws NotFoundExceptionInterface
      */
-    public function offsetGet($offset): mixed
+    public function offsetGet(string $offset): mixed
     {
         return $this->arguments()[$offset];
     }
@@ -219,13 +194,9 @@ class Request
     /**
      * Set the value at the given offset.
      *
-     * @param  string  $offset
-     * @param  mixed  $value
-     * @return void
-     *
      * @throws LogicException
      */
-    public function offsetSet($offset, $value): void
+    public function offsetSet(): void
     {
         throw new LogicException('Request data may not be mutated using array access.');
     }
@@ -233,12 +204,9 @@ class Request
     /**
      * Unset the value at the given offset.
      *
-     * @param  string  $offset
-     * @return void
-     *
      * @throws LogicException
      */
-    public function offsetUnset($offset): void
+    public function offsetUnset(): void
     {
         throw new LogicException('Request data may not be mutated using array access.');
     }

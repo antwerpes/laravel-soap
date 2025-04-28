@@ -1,11 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace CodeDredd\Soap\Tests;
+namespace Antwerpes\Soap\Tests;
 
-use CodeDredd\Soap\Facades\Soap;
-use CodeDredd\Soap\SoapServiceProvider;
+use Antwerpes\Soap\Facades\Soap;
+use Antwerpes\Soap\SoapServiceProvider;
+use Illuminate\Foundation\Application;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
-use Spatie\LaravelRay\RayServiceProvider;
 
 abstract class TestCase extends OrchestraTestCase
 {
@@ -14,21 +14,20 @@ abstract class TestCase extends OrchestraTestCase
     /**
      * Load package service provider.
      *
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param Application $app
+     *
      * @return string[]
      */
     protected function getPackageProviders($app)
     {
-        return [
-            SoapServiceProvider::class,
-            RayServiceProvider::class,
-        ];
+        return [SoapServiceProvider::class];
     }
 
     /**
      * Load package alias.
      *
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param Application $app
+     *
      * @return array
      */
     protected function getPackageAliases($app)
@@ -41,10 +40,9 @@ abstract class TestCase extends OrchestraTestCase
     /**
      * Define environment setup.
      *
-     * @param  \Illuminate\Foundation\Application  $app
-     * @return void
+     * @param Application $app
      */
-    protected function getEnvironmentSetUp($app)
+    protected function getEnvironmentSetUp($app): void
     {
         // Setup default wsse
         $app['config']->set('soap.clients.laravel_soap', [
@@ -55,6 +53,6 @@ abstract class TestCase extends OrchestraTestCase
             ],
         ]);
         $app['config']->set('soap.code.path', __DIR__.'/app');
-        $app['config']->set('soap.code.namespace', 'App\\Soap');
+        $app['config']->set('soap.code.namespace', 'App\Soap');
     }
 }

@@ -1,5 +1,5 @@
 {
-    "name": "codedredd/laravel-soap",
+    "name": "antwerpes/laravel-soap",
     "description": "A SoapClient wrapper integration for Laravel",
     "keywords": [
         "laravel",
@@ -10,56 +10,57 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "Gregor Becker",
-            "email": "gregor@codedredd.de"
+            "name": "Elisha Witte",
+            "email": "elisha.witte@doccheck.com"
         }
     ],
     "require": {
-        "php": "~8.1 || ~8.2 || ~8.3",
+        "php": "^8.2",
         "ext-soap": "*",
         "ext-bcmath": "*",
         "ext-intl": "*",
         "ext-json": "*",
         "ext-dom": "*",
         "ext-simplexml": "*",
-        "illuminate/http": "^9.0 || ^10.0 || ^11.0",
-        "illuminate/support": "^9.0 || ^10.0 || ^11.0",
-        "phpro/soap-client": "^2.3.0 || ^3.1.0",
-        "php-http/guzzle7-adapter": "^1.0",
-        "php-http/discovery": "^1.14",
-        "php-http/message": "^1.13",
-        "php-http/client-common": "^2.6",
+        "illuminate/http": "^12.0",
+        "illuminate/support": "^12.0",
+        "phpro/soap-client": "^4.0",
+        "php-http/guzzle7-adapter": "^1.1",
+        "php-http/discovery": "^1.20",
+        "php-http/message": "^1.16",
+        "php-http/client-common": "^2.7",
         "robrichards/wse-php": "^2.0",
-        "php-soap/psr18-transport": "^1.3",
-        "php-soap/psr18-wsse-middleware": "^2.1",
-        "veewee/xml": "^2.6",
-        "spatie/laravel-package-tools": "^1.14",
-        "illuminate/contracts": "^9.0 || ^10.0 || ^11.0"
+        "php-soap/psr18-transport": "^1.7",
+        "php-soap/psr18-wsse-middleware": "^2.6",
+        "veewee/xml": "^3.3",
+        "spatie/laravel-package-tools": "^1.91",
+        "illuminate/contracts": "^12.0",
+        "symfony/cache": "^7.2",
+        "php-soap/ext-soap-engine": "^1.7"
     },
     "require-dev": {
-        "symfony/options-resolver": "^6.2.5",
-        "phpunit/phpunit": "^10.0",
-        "orchestra/testbench": "^8.0 || ^9.0",
+        "chiiya/code-style-php": "^3.1",
+        "symfony/options-resolver": "^7.2",
+        "phpunit/phpunit": "^11.0",
+        "orchestra/testbench": "^10.0",
         "laminas/laminas-code": "^4.8.0",
-        "nunomaduro/collision": "^6.1",
-        "symplify/easy-ci": "^10.0",
-        "spatie/laravel-ray": "^1.32",
-        "larastan/larastan": "^2.9"
+        "nunomaduro/collision": "^8.0",
+        "larastan/larastan": "^3.4"
     },
     "autoload": {
         "psr-4": {
-            "CodeDredd\\Soap\\": "src/"
+            "Antwerpes\\Soap\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "CodeDredd\\Soap\\Tests\\": "tests/"
+            "Antwerpes\\Soap\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "CodeDredd\\Soap\\SoapServiceProvider"
+                "Antwerpes\\Soap\\SoapServiceProvider"
             ],
             "aliases": {
                 "SOAP": "SoapFacade"
@@ -70,7 +71,8 @@
     "prefer-stable": true,
     "config": {
         "allow-plugins": {
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
         }
     }
 }

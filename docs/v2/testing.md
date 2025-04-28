@@ -10,7 +10,7 @@ and this SOAP wrapper is no exception.
 ---
 ## :fontawesome-brands-jedi-order: **Faking**
 
-Include `#!php-inline use CodeDredd\Soap\Facades\Soap` in your testing class.
+Include `#!php-inline use Antwerpes\Soap\Facades\Soap` in your testing class.
 The `Soap` facade's `fake` method allows you to instruct the SOAP client to return stubbed / dummy responses 
 when requests are made.
 
@@ -21,7 +21,7 @@ when requests are made.
 !!! info ""
     - **`Method`** : `#!php-inline function fake($callback = null)`
     - **`Param`** : `#!php-inline callable|array $callback`
-    - **`Return`** : `#!php-inline \CodeDredd\Soap\SoapFactory`
+    - **`Return`** : `#!php-inline \Antwerpes\Soap\SoapFactory`
 
 !!! example "Examples with Soap::response"
     === "simple"
@@ -55,7 +55,7 @@ when requests are made.
         ]);
         ```
     === "with callback"
-        If you require more complicated logic to determine what responses to return for certain endpoints, you may pass a callback to the `fake` method. This callback will receive an instance of `CodeDredd\Soap\Client\Request` and should return a response instance:
+        If you require more complicated logic to determine what responses to return for certain endpoints, you may pass a callback to the `fake` method. This callback will receive an instance of `Antwerpes\Soap\Client\Request` and should return a response instance:
         ``` php-inline
         Soap::fake(function ($request) {
             return Soap::response('Hello World', 200);
@@ -115,7 +115,7 @@ when requests are made.
 
 !!! info ""
     - **`Method`** : `#!php-inline function sequence(array $responses = [])`
-    - **`Return`** : `#!php-inline \CodeDredd\Soap\Client\ResponseSequence`
+    - **`Return`** : `#!php-inline \Antwerpes\Soap\Client\ResponseSequence`
     
 #### :fontawesome-brands-galactic-republic: ***push***
 
@@ -123,7 +123,7 @@ when requests are made.
 
 !!! info ""
     - **`Method`** : `#!php-inline function push($body = '', int $status = 200, array $headers = [])`
-    - **`Return`** : `#!php-inline \CodeDredd\Soap\Client\ResponseSequence`
+    - **`Return`** : `#!php-inline \Antwerpes\Soap\Client\ResponseSequence`
 
 #### :fontawesome-brands-galactic-republic: ***pushResponse***
 
@@ -132,7 +132,7 @@ when requests are made.
 !!! info ""
     - **`Method`** : `#!php-inline function pushResponse($response)`
     - **`Param`** : `#!php-inline \GuzzleHttp\Promise\PromiseInterface|\Closure $response`
-    - **`Return`** : `#!php-inline \CodeDredd\Soap\Client\ResponseSequence`
+    - **`Return`** : `#!php-inline \Antwerpes\Soap\Client\ResponseSequence`
     
 #### :fontawesome-brands-galactic-republic: ***pushStatus***
 
@@ -140,7 +140,7 @@ when requests are made.
 
 !!! info ""
     - **`Method`** : `#!php-inline function pushStatus(string $filePath, int $status = 200, array $headers = [])`
-    - **`Return`** : `#!php-inline \CodeDredd\Soap\Client\ResponseSequence`
+    - **`Return`** : `#!php-inline \Antwerpes\Soap\Client\ResponseSequence`
     
 #### :fontawesome-brands-galactic-republic: ***dontFailWhenEmpty***
 
@@ -148,7 +148,7 @@ when requests are made.
 
 !!! info ""
     - **`Method`** : `#!php-inline function dontFailWhenEmpty()`
-    - **`Return`** : `#!php-inline \CodeDredd\Soap\Client\ResponseSequence`
+    - **`Return`** : `#!php-inline \Antwerpes\Soap\Client\ResponseSequence`
     
 #### :fontawesome-brands-galactic-republic: ***whenEmpty***
 
@@ -157,7 +157,7 @@ when requests are made.
 !!! info ""
     - **`Method`** : `#!php-inline function whenEmpty($response)`
     - **`Param`** : `#!php-inline \GuzzleHttp\Promise\PromiseInterface|\Closure $response`
-    - **`Return`** : `#!php-inline \CodeDredd\Soap\Client\ResponseSequence`
+    - **`Return`** : `#!php-inline \Antwerpes\Soap\Client\ResponseSequence`
     
 #### :fontawesome-brands-galactic-republic: ***pushFile***
 
@@ -165,7 +165,7 @@ when requests are made.
 
 !!! info ""
     - **`Method`** : `#!php-inline function pushFile(int $status = 200, array $headers = [])`
-    - **`Return`** : `#!php-inline \CodeDredd\Soap\Client\ResponseSequence`
+    - **`Return`** : `#!php-inline \Antwerpes\Soap\Client\ResponseSequence`
 
 ### :fontawesome-solid-jedi: ***fakeSequence***
 
@@ -175,7 +175,7 @@ If you would like to fake a sequence of responses but do not need to specify a s
 
 !!! info ""
     - **`Method`** : `#!php-inline function fakeSequence(string $url = '*')`
-    - **`Return`** : `#!php-inline \CodeDredd\Soap\Client\ResponseSequence`
+    - **`Return`** : `#!php-inline \Antwerpes\Soap\Client\ResponseSequence`
     
 !!! example "Example"
     ``` php-inline

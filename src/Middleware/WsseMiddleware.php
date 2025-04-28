@@ -1,6 +1,6 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace CodeDredd\Soap\Middleware;
+namespace Antwerpes\Soap\Middleware;
 
 use Http\Client\Common\Plugin;
 use Http\Promise\Promise;
@@ -60,7 +60,7 @@ class WsseMiddleware implements Plugin
         return $this;
     }
 
-    public function withUserToken(string $username, string $password = null, $digest = false): self
+    public function withUserToken(string $username, ?string $password = null, $digest = false): self
     {
         $this->userTokenName = $username;
         $this->userTokenPassword = $password;
@@ -87,15 +87,15 @@ class WsseMiddleware implements Plugin
     public function handleRequest(RequestInterface $request, callable $next, callable $first): Promise
     {
         return $this->beforeRequest($next, $request)->then(
-            fn (ResponseInterface $response): ResponseInterface => $this->afterResponse($response)
+            fn (ResponseInterface $response): ResponseInterface => $this->afterResponse($response),
         );
     }
 
     public function beforeRequest(callable $handler, RequestInterface $request): Promise
     {
-        $request = (new XmlMessageManipulator())(
+        $request = (new XmlMessageManipulator)(
             $request,
-            function (Document $xml) {
+            function (Document $xml): void {
                 $wsse = new WSSESoap($xml->toUnsafeDocument(), $this->mustUnderstand);
 
                 // Prepare the WSSE soap class:
@@ -144,9 +144,9 @@ class WsseMiddleware implements Plugin
             return $response;
         }
 
-        return (new XmlMessageManipulator())(
+        return (new XmlMessageManipulator)(
             $response,
-            function (Document $xml) {
+            function (Document $xml): void {
                 $wsse = new WSSESoap($xml->toUnsafeDocument());
                 $wsse->decryptSoapDoc(
                     $xml->toUnsafeDocument(),
@@ -158,7 +158,7 @@ class WsseMiddleware implements Plugin
                                 'isCert' => false,
                             ],
                         ],
-                    ]
+                    ],
                 );
             }
         );

@@ -36,7 +36,7 @@ Headers may be added to requests using the `withHeaders` method. This `withHeade
 You are free to extend the SOAP client class used internally by this 
 package, by defining your own class and extending the package client:
 
-    use CodeDredd\Soap\SoapClient as BaseClient;
+    use Antwerpes\Soap\SoapClient as BaseClient;
     
     class SoapClient extends BaseClient
     {
@@ -48,7 +48,7 @@ custom class. Typically, this will happen in the `boot` method of
 your application's `App\Providers\AppServiceProvider` class:
 
     use App\Soap\SoapClient;
-    use CodeDredd\Soap\SoapFactory;
+    use Antwerpes\Soap\SoapFactory;
     
     public function boot()
     {

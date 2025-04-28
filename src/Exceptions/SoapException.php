@@ -1,18 +1,14 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace CodeDredd\Soap\Exceptions;
+namespace Antwerpes\Soap\Exceptions;
 
-/**
- * Class SoapException.
- */
-class SoapException extends \RuntimeException
+use RuntimeException;
+use Throwable;
+
+class SoapException extends RuntimeException
 {
-    /**
-     * @param  \Throwable  $throwable
-     * @return SoapException
-     */
-    public static function fromThrowable(\Throwable $throwable): self
+    public static function fromThrowable(Throwable $throwable): self
     {
-        return new self($throwable->getMessage(), (int) $throwable->getCode(), $throwable);
+        return new self($throwable->getMessage(), $throwable->getCode(), $throwable);
     }
 }

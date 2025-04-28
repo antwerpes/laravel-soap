@@ -1,66 +1,39 @@
-<p align="center">
-  <a href="https://codedredd.github.io/laravel-soap/" target="_blank" rel="noopener noreferrer">
-    <img style="width: 100%; height: auto" width="100%" src="https://www.codedredd.de/images/laravel-soap/preview.png" alt="Laravel SOAP">
-  </a>
-</p>
+# Passes
 
-# Laravel SOAP Client
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/antwerpes/laravel-soap.svg?style=flat-square)](https://packagist.org/packages/antwerpes/laravel-soap)
+[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/antwerpes/laravel-soap/run-tests.yml?branch=master)](https://github.com/antwerpes/laravel-soap/actions/workflows/run-tests.yml)
+[![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/antwerpes/laravel-soap/lint.yml?branch=master)](https://github.com/antwerpes/laravel-soap/actions/workflows/lint.yml)
+[![Total Downloads](https://img.shields.io/packagist/dt/antwerpes/laravel-soap.svg?style=flat-square)](https://packagist.org/packages/antwerpes/laravel-soap)
 
-[![Software License](https://img.shields.io/github/license/codedredd/laravel-soap?style=flat-square)](LICENSE.md)
-[![Total Downloads](https://img.shields.io/packagist/dt/codedredd/laravel-soap?style=flat-square)](https://packagist.org/packages/codedredd/laravel-soap)
-[![test](https://img.shields.io/github/workflow/status/codedredd/laravel-soap/test?label=test&logo=github&style=flat-square)](https://github.com/CodeDredd/laravel-soap/actions?query=workflow%3Atest)
-[![styleci](https://github.styleci.io/repos/7548986/shield)](https://github.styleci.io/repos/257192373)
-[![version](https://img.shields.io/github/v/release/codedredd/laravel-soap?style=flat-square)](https://github.com/CodeDredd/laravel-soap/releases)
-[![documentation](https://img.shields.io/github/workflow/status/codedredd/laravel-soap/documentation?label=docs&logo=read-the-docs&style=flat-square)](https://codedredd.github.io/laravel-soap/)
+Fork of [codedredd/laravel-soap](https://github.com/CodeDredd/laravel-soap) compatible with Laravel 12 and PHP 8.4
 
-## Versions
-| Laravel SOAP Version | Laravel Support | PHP Version |
-|----------------------|-----------------|-------------|
-| 1.x                  | 5.6, 6.x, 7.x   | 7.3 - 8.0   |
-| 2.x                  | 8.x             | 7.3 - 8.0   |
-| 3.x                  | 9.x             | 8.0 - 8.1   |
-| 4.x                  | 9.x, 10.x       | 8.1 - 8.2   |
-
-<a name="installation"></a>
 ## Installation
 
-Execute the following command to get the latest version of the package:
+You can install the package via composer:
 
-    composer require codedredd/laravel-soap
-    
-## Documentation
-You can find here a detailed [documentation](https://codedredd.github.io/laravel-soap/)
+```bash
+composer require antwerpes/laravel-soap
+```
 
-## Help me keep working on this project 💚
+## Usage
 
-- [Become a Sponsor on GitHub](https://github.com/sponsors/codedredd)
-- [One-time donation via PayPal](https://paypal.me/dredd1984)
+For usage details, see the [original documentation](https://codedredd.github.io/laravel-soap/), but 
+replace `Codedredd\Soap` namespaces with `Antwerpes\Soap`.
 
-<!--sponsors start-->
-<h3 align="center">Platinum Sponsors</h3>
-<p align="center">
-</p>
+## Testing
 
-<h4 align="center">Gold Sponsors</h4>
-<p align="center">
-</p>
+```bash
+just test
+```
 
-<h4 align="center">Silver Sponsors</h4>
-<p align="center">
-</p>
+## Changelog
 
-<h4 align="center">Bronze Sponsors</h4>
-<p align="center">
-</p>
+Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
 
-<!--sponsors end-->
-
----
-
-<a name="contributing"></a>
 ## Contributing
-Please post issues and send PRs.
 
-<a name="licence"></a>
+Please see [CONTRIBUTING](.github/CONTRIBUTING.md) for details.
+
 ## License
-Laravel Soap is open-sourced software licensed under the MIT license.
+
+The MIT License (MIT). Please see [License File](LICENSE.md) for more information.

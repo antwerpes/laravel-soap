@@ -2,7 +2,7 @@
 
 ## Object
 
-The `call` method returns an instance of `CodeDredd\Soap\Client\Response`, which provides a variety of methods that may be used to inspect the response:
+The `call` method returns an instance of `Antwerpes\Soap\Client\Response`, which provides a variety of methods that may be used to inspect the response:
 
     $response->body() : string;
     $response->json() : array;
@@ -11,10 +11,10 @@ The `call` method returns an instance of `CodeDredd\Soap\Client\Response`, which
     $response->successful() : bool;
     $response->serverError() : bool;
     $response->clientError() : bool;
-    $response->onError(callable $callback): \CodeDredd\Soap\Client\Response;
+    $response->onError(callable $callback): \Antwerpes\Soap\Client\Response;
     $response->collect(): \Illuminate\Support\Collection;
 
-The `CodeDredd\Soap\Client\Response` object also implements the PHP `ArrayAccess` interface, allowing you to access your response data directly on the response:
+The `Antwerpes\Soap\Client\Response` object also implements the PHP `ArrayAccess` interface, allowing you to access your response data directly on the response:
 
     return Soap::baseWsdl('http://test.com'/v1?wsdl)->call('Get_Users')['name'];
 
@@ -33,7 +33,7 @@ Unlike Guzzle's default behavior, this SOAP client wrapper does not throw except
 
 ### Throwing Exceptions
 
-If you have a response instance and would like to throw an instance of `CodeDredd\Soap\Exceptions\RequestException` if the response is a client or server error, you may use the `throw` method:
+If you have a response instance and would like to throw an instance of `Antwerpes\Soap\Exceptions\RequestException` if the response is a client or server error, you may use the `throw` method:
 
     $response = Soap::baseWsdl(...)->call(...);
 
@@ -42,7 +42,7 @@ If you have a response instance and would like to throw an instance of `CodeDred
 
     return $response['user']['id'];
 
-The `CodeDredd\Soap\Exceptions\RequestException` instance has a public `$response` property which will allow you to inspect the returned response.
+The `Antwerpes\Soap\Exceptions\RequestException` instance has a public `$response` property which will allow you to inspect the returned response.
 
 The `throw` method returns the response instance if no error occurred, allowing you to chain other operations onto the `throw` method:
 

@@ -3,7 +3,7 @@
 ## Simple call
 To make requests, you may use the `call` method or your soap action through magic `__call`. First, let's examine how to make a basic `action` request:
 
-    use CodeDredd\Soap\Facades\Soap;
+    use Antwerpes\Soap\Facades\Soap;
 
     $response = Soap::baseWsdl('http://test.com'/v1?wsdl)->call('Get_Users');
     // Or via magic method call

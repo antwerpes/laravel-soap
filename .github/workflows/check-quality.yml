@@ -1,0 +1,20 @@
+on: [push]
+name: check-quality
+jobs:
+  lint:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@v3
+      - name: PHPStan
+        run: ./vendor/bin/phpstan analyse

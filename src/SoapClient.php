@@ -1,18 +1,18 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace CodeDredd\Soap;
+namespace Antwerpes\Soap;
 
+use Antwerpes\Soap\Client\Events\ConnectionFailed;
+use Antwerpes\Soap\Client\Events\RequestSending;
+use Antwerpes\Soap\Client\Events\ResponseReceived;
+use Antwerpes\Soap\Client\Request;
+use Antwerpes\Soap\Client\Response;
+use Antwerpes\Soap\Driver\ExtSoap\ExtSoapEngineFactory;
+use Antwerpes\Soap\Exceptions\NotFoundConfigurationException;
+use Antwerpes\Soap\Exceptions\SoapException;
+use Antwerpes\Soap\Middleware\WsseMiddleware;
 use Closure;
-use CodeDredd\Soap\Client\Events\ConnectionFailed;
-use CodeDredd\Soap\Client\Events\RequestSending;
-use CodeDredd\Soap\Client\Events\ResponseReceived;
-use CodeDredd\Soap\Client\Request;
-use CodeDredd\Soap\Client\Response;
-use CodeDredd\Soap\Driver\ExtSoap\ExtSoapEngineFactory;
-use CodeDredd\Soap\Exceptions\NotFoundConfigurationException;
-use CodeDredd\Soap\Exceptions\SoapException;
-use CodeDredd\Soap\Middleware\CisDhlMiddleware;
-use CodeDredd\Soap\Middleware\WsseMiddleware;
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response as Psr7Response;
@@ -21,6 +21,7 @@ use Http\Client\Common\PluginClient;
 use Http\Client\Exception\HttpException;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
 use Illuminate\Support\Traits\Macroable;
@@ -41,86 +42,57 @@ use Soap\Psr18WsseMiddleware\WsaMiddleware;
 use Soap\Psr18WsseMiddleware\WsaMiddleware2005;
 use Soap\Wsdl\Loader\FlatteningLoader;
 use Soap\Wsdl\Loader\StreamWrapperLoader;
+use SoapFault;
 
-/**
- * Class SoapClient.
- */
 class SoapClient
 {
+    use Conditionable;
     use Macroable {
         __call as macroCall;
     }
-    use Conditionable;
-
     protected ClientInterface $client;
-
     protected PluginClient $pluginClient;
-
     protected Engine $engine;
-
     protected array $options = [];
-
     protected ExtSoapOptions $extSoapOptions;
-
     protected TraceableTransport|Transport $transport;
-
     protected array $guzzleClientOptions = [];
 
-    /**
-     * The transfer stats for the request.
-     */
+    /** The transfer stats for the request. */
     protected ?TransferStats $transferStats = null;
-
     protected string $wsdl = '';
-
-    protected bool $isClientBuilded = false;
-
+    protected bool $isClientBuilt = false;
     protected array $middlewares = [];
-
-    protected SoapFactory|null $factory;
-
     protected FlatteningLoader|WsdlProvider $wsdlProvider;
-
     protected array $cookies = [];
 
-    /**
-     * The callbacks that should execute before the request is sent.
-     */
-    protected \Illuminate\Support\Collection $beforeSendingCallbacks;
+    /** The callbacks that should execute before the request is sent. */
+    protected Collection $beforeSendingCallbacks;
 
-    /**
-     * The stub callables that will handle requests.
-     */
-    protected \Illuminate\Support\Collection|null $stubCallbacks;
+    /** The stub callables that will handle requests. */
+    protected ?Collection $stubCallbacks;
 
-    /**
-     * The sent request object, if a request has been made.
-     *
-     * @var Request|null
-     */
-    protected $request;
+    /** The request object, if a request has been made. */
+    protected ?Request $request = null;
 
-    /**
-     * Create a new Soap Client instance.
-     *
-     * @param  \CodeDredd\Soap\SoapFactory|null  $factory
-     * @return void
-     */
-    public function __construct(SoapFactory $factory = null)
-    {
-        $this->factory = $factory;
+    public function __construct(
+        protected ?SoapFactory $factory = null,
+    ) {
         $this->client = new Client($this->guzzleClientOptions);
         $this->pluginClient = new PluginClient($this->client, $this->middlewares);
         $this->wsdlProvider = new FlatteningLoader(Psr18Loader::createForClient($this->pluginClient));
-        $this->beforeSendingCallbacks = collect([function (Request $request, array $options, SoapClient $soapClient) {
-            $soapClient->request = $request;
-            $soapClient->cookies = Arr::wrap($options['cookies']);
+        $this->beforeSendingCallbacks = collect(
+            [
+                function (Request $request, array $options, SoapClient $soapClient): void {
+                    $soapClient->request = $request;
+                    $soapClient->cookies = Arr::wrap($options['cookies']);
 
-            $soapClient->dispatchRequestSendingEvent();
-        }]);
+                    $soapClient->dispatchRequestSendingEvent();
+                }],
+        );
     }
 
-    public function refreshWsdlProvider()
+    public function refreshWsdlProvider(): static
     {
         $this->wsdlProvider = new FlatteningLoader(Psr18Loader::createForClient($this->pluginClient));
 
@@ -137,21 +109,6 @@ class SoapClient
     public function getPluginClient(): PluginClient
     {
         return $this->pluginClient;
-    }
-
-    protected function setTransport(Transport $handler = null): static
-    {
-        $soapClient = AbusedClient::createFromOptions(
-            ExtSoapOptions::defaults($this->wsdl, $this->options)
-        );
-        $transport = $handler ?? Psr18Transport::createForClient($this->pluginClient);
-
-        $this->transport = $handler ?? new TraceableTransport(
-            $soapClient,
-            $transport
-        );
-
-        return $this;
     }
 
     /**
@@ -187,111 +144,51 @@ class SoapClient
         return $this->engine;
     }
 
-    /**
-     * @return $this
-     */
-    public function withRemoveEmptyNodes()
+    public function withRemoveEmptyNodes(): static
     {
-        $this->middlewares = array_merge_recursive($this->middlewares, [
-            new RemoveEmptyNodesMiddleware(),
-        ]);
+        $this->middlewares = array_merge_recursive($this->middlewares, [new RemoveEmptyNodesMiddleware]);
 
         return $this;
     }
 
-    /**
-     * @param  string|array  $username
-     * @param  string|null  $password
-     * @return $this
-     */
-    public function withBasicAuth($username, ?string $password = null)
+    public function withBasicAuth(string $username, string $password): static
     {
-        if (is_array($username)) {
-            ['username' => $username, 'password' => $password] = $username;
-        }
-
         $this->withHeaders([
-            'Authorization' => sprintf('Basic %s', base64_encode(
-                sprintf('%s:%s', $username, $password)
-            )),
+            'Authorization' => sprintf('Basic %s', base64_encode(sprintf('%s:%s', $username, $password))),
         ]);
 
         return $this;
     }
 
-    /**
-     * @param  string|array  $user
-     * @param  string|null  $signature
-     * @return $this
-     */
-    public function withCisDHLAuth($user, ?string $signature = null)
+    public function withWsa(): static
     {
-        if (is_array($user)) {
-            ['username' => $user, 'password' => $signature] = $user;
-        }
-
-        $this->middlewares = array_merge_recursive($this->middlewares, [
-            new CisDhlMiddleware($user, $signature),
-        ]);
+        $this->middlewares = array_merge_recursive($this->middlewares, [new WsaMiddleware]);
 
         return $this;
     }
 
-    /**
-     * @return $this
-     */
-    public function withWsa()
+    public function withWsa2005(): static
     {
-        $this->middlewares = array_merge_recursive($this->middlewares, [
-            new WsaMiddleware(),
-        ]);
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function withWsa2005()
-    {
-        $this->middlewares = array_merge_recursive($this->middlewares, [
-            new WsaMiddleware2005(),
-        ]);
+        $this->middlewares = array_merge_recursive($this->middlewares, [new WsaMiddleware2005]);
 
         return $this;
     }
 
     public function withWsse(array $options): static
     {
-        $this->middlewares = array_merge_recursive($this->middlewares, [
-            new WsseMiddleware($options),
-        ]);
+        $this->middlewares = array_merge_recursive($this->middlewares, [new WsseMiddleware($options)]);
 
         return $this;
     }
 
     /**
      * Merge new options into the client.
-     *
-     * @param  array  $options
-     * @return $this
      */
-    public function withOptions(array $options)
+    public function withOptions(array $options): static
     {
-        return tap($this, function ($request) use ($options) {
-            return $this->options = array_merge_recursive($this->options, $options);
-        });
-    }
+        $this->options = array_merge_recursive($this->options, $options);
 
-    /**
-     * Merge the given options with the current request options.
-     *
-     * @param  array  $options
-     * @return array
-     */
-    public function mergeOptions(...$options)
-    {
-        return array_merge_recursive($this->options, ...$options);
+        return $this;
     }
 
     /**
@@ -304,11 +201,11 @@ class SoapClient
 
             return [
                 'request' => [
-                    'headers' => trim($lastRequestInfo->getLastRequestHeaders()),
+                    'headers' => mb_trim($lastRequestInfo->getLastRequestHeaders()),
                     'body' => $lastRequestInfo->getLastRequest(),
                 ],
                 'response' => [
-                    'headers' => trim($lastRequestInfo->getLastResponseHeaders()),
+                    'headers' => mb_trim($lastRequestInfo->getLastResponseHeaders()),
                     'body' => $lastRequestInfo->getLastResponse(),
                 ],
             ];
@@ -317,61 +214,40 @@ class SoapClient
         return [];
     }
 
-    /**
-     * Handle a failed validation attempt.
-     *
-     * @param  \Illuminate\Contracts\Validation\Validator  $validator
-     * @return Response
-     */
-    protected function failedValidation(Validator $validator)
-    {
-        return Response::fromSoapResponse([
-            'success' => false,
-            'message' => __('Invalid data.'),
-            'errors' => $validator->errors(),
-        ]);
-    }
-
-    public function __call($method, $parameters)
-    {
-        if (static::hasMacro($method)) {
-            return $this->macroCall($method, $parameters);
-        }
-
-        return $this->call($method, $parameters[0] ?? $parameters);
-    }
-
-    public function call(string $method, Validator|array $arguments = []): Response
+    public function call(string $method, array|Validator $arguments = []): Response
     {
         try {
-            if (! $this->isClientBuilded) {
+            if (! $this->isClientBuilt) {
                 $this->buildClient();
             }
             $this->refreshEngine();
+
             if ($arguments instanceof Validator) {
                 if ($arguments->fails()) {
                     return $this->failedValidation($arguments);
                 }
                 $arguments = $arguments->validated();
             }
-            $arguments = config()->get('soap.call.wrap_arguments_in_array', true) ? [$arguments] : $arguments;
+            $arguments = config('soap.call.wrap_arguments_in_array', true) ? [$arguments] : $arguments;
             $result = $this->engine->request($method, $arguments);
+
             if ($result instanceof ResultProviderInterface) {
                 return $this->buildResponse(Response::fromSoapResponse($result->getResult()));
             }
+
             if (! $result instanceof ResultInterface) {
                 return $this->buildResponse(Response::fromSoapResponse($result));
             }
 
             return $this->buildResponse(new Response(new Psr7Response(200, [], $result)));
-        } catch (\Exception $exception) {
-            if ($exception instanceof \SoapFault) {
+        } catch (Exception $exception) {
+            if ($exception instanceof SoapFault) {
                 return $this->buildResponse(Response::fromSoapFault($exception));
             }
             $previous = $exception->getPrevious();
             $this->dispatchConnectionFailedEvent();
+
             if ($previous instanceof HttpException) {
-                /** @var HttpException $previous */
                 return new Response($previous->getResponse());
             }
 
@@ -379,49 +255,37 @@ class SoapClient
         }
     }
 
-    protected function buildResponse($response)
-    {
-        return tap($response, function ($result) {
-            $this->populateResponse($result);
-            $this->dispatchResponseReceivedEvent($result);
-        });
-    }
-
     /**
      * Build the Soap client.
      *
-     * @param  string  $setup
-     * @return SoapClient
-     *
      * @throws NotFoundConfigurationException
      */
-    public function buildClient(string $setup = '')
+    public function buildClient(string $setup = ''): static
     {
         $this->byConfig($setup);
         $this->withGuzzleClientOptions([
             'handler' => $this->buildHandlerStack(),
-            'on_stats' => function ($transferStats) {
+            'on_stats' => function ($transferStats): void {
                 $this->transferStats = $transferStats;
             },
         ]);
-        $this->isClientBuilded = true;
+        $this->isClientBuilt = true;
 
         return $this;
     }
 
     /**
-     * @param  string  $setup
-     * @return $this
-     *
      * @throws NotFoundConfigurationException
      */
-    public function byConfig(string $setup)
+    public function byConfig(string $setup): static
     {
         if (! empty($setup)) {
-            $setup = config()->get('soap.clients.'.$setup);
+            $setup = config('soap.clients.'.$setup);
+
             if (! $setup) {
                 throw new NotFoundConfigurationException($setup);
             }
+
             foreach ($setup as $setupItem => $setupItemConfig) {
                 if (is_bool($setupItemConfig)) {
                     $this->{Str::camel($setupItem)}();
@@ -437,27 +301,11 @@ class SoapClient
     }
 
     /**
-     * @param  array  $items
-     * @return array
-     */
-    protected function arrayKeysToCamel(array $items)
-    {
-        $changedItems = [];
-        foreach ($items as $key => $value) {
-            $changedItems[Str::camel($key)] = $value;
-        }
-
-        return $changedItems;
-    }
-
-    /**
      * Build the before sending handler stack.
-     *
-     * @return \GuzzleHttp\HandlerStack
      */
-    public function buildHandlerStack()
+    public function buildHandlerStack(): HandlerStack
     {
-        return tap(HandlerStack::create(), function ($stack) {
+        return tap(HandlerStack::create(), function ($stack): void {
             $stack->push($this->buildBeforeSendingHandler(), 'before_sending');
             $stack->push($this->buildRecorderHandler(), 'recorder');
             $stack->push($this->buildStubHandler(), 'stub');
@@ -469,82 +317,30 @@ class SoapClient
      */
     public function buildBeforeSendingHandler(): Closure
     {
-        return function ($handler) {
-            return function ($request, $options) use ($handler) {
-                return $handler($this->runBeforeSendingCallbacks($request, $options), $options);
-            };
-        };
+        return fn ($handler) => fn ($request, $options) => $handler($this->runBeforeSendingCallbacks(
+            $request,
+            $options,
+        ), $options);
     }
 
     /**
      * Execute the "before sending" callbacks.
      */
-    public function runBeforeSendingCallbacks(RequestInterface $request, array $options): mixed
+    public function runBeforeSendingCallbacks(RequestInterface $request, array $options): RequestInterface
     {
-        return tap($request, function ($request) use ($options) {
-            $this->beforeSendingCallbacks->each->__invoke(
+        return tap($request, function ($request) use ($options): void {
+            $this->beforeSendingCallbacks->each(fn (callable $callable) => $callable(
                 new Request($request),
                 $options,
-                $this
-            );
+                $this,
+            ));
         });
     }
 
     /**
-     * Populate the given response with additional data.
-     *
-     * @param  \CodeDredd\Soap\Client\Response  $response
-     * @return \CodeDredd\Soap\Client\Response
-     */
-    protected function populateResponse(Response $response)
-    {
-        $response->setCookies($this->cookies);
-        $response->setTransferStats($this->transferStats);
-
-        return $response;
-    }
-
-    /**
-     * Dispatch the RequestSending event if a dispatcher is available.
-     *
-     * @return void
-     */
-    protected function dispatchRequestSendingEvent()
-    {
-        event(new RequestSending($this->request));
-    }
-
-    /**
-     * Dispatch the ResponseReceived event if a dispatcher is available.
-     *
-     * @param  \CodeDredd\Soap\Client\Response  $response
-     * @return void
-     */
-    protected function dispatchResponseReceivedEvent(Response $response)
-    {
-        if (! $this->request) {
-            return;
-        }
-
-        event(new ResponseReceived($this->request, $response));
-    }
-
-    /**
-     * Dispatch the ConnectionFailed event if a dispatcher is available.
-     *
-     * @return void
-     */
-    protected function dispatchConnectionFailedEvent()
-    {
-        event(new ConnectionFailed($this->request));
-    }
-
-    /**
      * Build the recorder handler.
-     *
-     * @return Closure
      */
-    public function buildRecorderHandler()
+    public function buildRecorderHandler(): Closure
     {
         return function ($handler) {
             return function ($request, $options) use ($handler) {
@@ -553,7 +349,7 @@ class SoapClient
                 return $promise->then(function ($response) use ($request) {
                     optional($this->factory)->recordRequestResponsePair(
                         new Request($request),
-                        new Response($response)
+                        new Response($response),
                     );
 
                     return $response;
@@ -564,21 +360,21 @@ class SoapClient
 
     /**
      * Build the stub handler.
-     *
-     * @return Closure
      */
-    public function buildStubHandler()
+    public function buildStubHandler(): Closure
     {
         return function (callable $handler) {
             return function ($request, $options) use ($handler) {
                 $response = ($this->stubCallbacks ?? collect())
-                    ->map
-                    ->__invoke(new Request($request), $options)
+                    ->map(fn (callable $callback) => $callback(new Request($request), $options))
                     ->filter()
                     ->first();
-                if (is_null($response)) {
+
+                if ($response === null) {
                     return $handler($request, $options);
-                } elseif (is_array($response)) {
+                }
+
+                if (is_array($response)) {
                     return SoapFactory::response($response);
                 }
 
@@ -587,38 +383,7 @@ class SoapClient
         };
     }
 
-    /**
-     * @return $this
-     */
-    protected function refreshEngine()
-    {
-        $this->refreshPluginClient();
-        $this->setTransport();
-        $this->refreshExtSoapOptions();
-        $this->engine = ExtSoapEngineFactory::fromOptionsWithHandler(
-            $this->extSoapOptions,
-            $this->transport,
-            $this->factory->isRecording()
-        );
-        $this->refreshWsdlProvider();
-
-        return $this;
-    }
-
-    protected function refreshExtSoapOptions()
-    {
-        $this->extSoapOptions = ExtSoapOptions::defaults($this->wsdl, $this->options);
-        if ($this->factory->isRecording()) {
-            $this->wsdlProvider = new FlatteningLoader(new StreamWrapperLoader());
-//            $this->extSoapOptions->withWsdlProvider($this->wsdlProvider);
-        }
-    }
-
-    /**
-     * @param  string  $wsdl
-     * @return $this
-     */
-    public function baseWsdl(string $wsdl)
+    public function baseWsdl(string $wsdl): static
     {
         $this->wsdl = $wsdl;
 
@@ -627,14 +392,128 @@ class SoapClient
 
     /**
      * Register a stub callable that will intercept requests and be able to return stub responses.
-     *
-     * @param  callable  $callback
-     * @return $this
      */
-    public function stub($callback)
+    public function stub(callable|Collection $callback): static
     {
+        if ($callback instanceof Collection) {
+            $callback = $callback->all();
+        }
+
         $this->stubCallbacks = collect($callback);
 
         return $this;
+    }
+
+    protected function setTransport(?Transport $handler = null): static
+    {
+        $soapClient = AbusedClient::createFromOptions(ExtSoapOptions::defaults($this->wsdl, $this->options));
+        $transport = $handler ?? Psr18Transport::createForClient($this->pluginClient);
+
+        $this->transport = $handler ?? new TraceableTransport($soapClient, $transport);
+
+        return $this;
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator): Response
+    {
+        return Response::fromSoapResponse([
+            'success' => false,
+            'message' => __('Invalid data.'),
+            'errors' => $validator->errors(),
+        ]);
+    }
+
+    protected function buildResponse($response)
+    {
+        return tap($response, function ($result): void {
+            $this->populateResponse($result);
+            $this->dispatchResponseReceivedEvent($result);
+        });
+    }
+
+    protected function arrayKeysToCamel(array $items): array
+    {
+        $changedItems = [];
+
+        foreach ($items as $key => $value) {
+            $changedItems[Str::camel($key)] = $value;
+        }
+
+        return $changedItems;
+    }
+
+    /**
+     * Populate the given response with additional data.
+     */
+    protected function populateResponse(Response $response): Response
+    {
+        $response->setCookies($this->cookies);
+        $response->setTransferStats($this->transferStats);
+
+        return $response;
+    }
+
+    /**
+     * Dispatch the RequestSending event if a dispatcher is available.
+     */
+    protected function dispatchRequestSendingEvent(): void
+    {
+        event(new RequestSending($this->request));
+    }
+
+    /**
+     * Dispatch the ResponseReceived event if a dispatcher is available.
+     */
+    protected function dispatchResponseReceivedEvent(Response $response): void
+    {
+        if (! $this->request instanceof Request) {
+            return;
+        }
+
+        event(new ResponseReceived($this->request, $response));
+    }
+
+    /**
+     * Dispatch the ConnectionFailed event if a dispatcher is available.
+     */
+    protected function dispatchConnectionFailedEvent(): void
+    {
+        event(new ConnectionFailed($this->request));
+    }
+
+    protected function refreshEngine(): static
+    {
+        $this->refreshPluginClient();
+        $this->setTransport();
+        $this->refreshExtSoapOptions();
+        $this->engine = ExtSoapEngineFactory::fromOptionsWithHandler(
+            $this->extSoapOptions,
+            $this->transport,
+            $this->factory->isRecording(),
+        );
+        $this->refreshWsdlProvider();
+
+        return $this;
+    }
+
+    protected function refreshExtSoapOptions(): void
+    {
+        $this->extSoapOptions = ExtSoapOptions::defaults($this->wsdl, $this->options);
+
+        if ($this->factory->isRecording()) {
+            $this->wsdlProvider = new FlatteningLoader(new StreamWrapperLoader);
+        }
+    }
+
+    public function __call($method, $parameters)
+    {
+        if (static::hasMacro($method)) {
+            return $this->macroCall($method, $parameters);
+        }
+
+        return $this->call($method, $parameters[0] ?? $parameters);
     }
 }
